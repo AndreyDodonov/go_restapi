@@ -1,14 +1,15 @@
- package store
+package store
 
-import(
+import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
 )
 
 type Store struct {
-	config *Config
-	db     *sql.DB
+	config         *Config
+	db             *sql.DB
+	userRepository *UserRepository
 }
 
 // New
@@ -37,4 +38,19 @@ func (s *Store) Open() error {
 // Close
 func (s *Store) Close() {
 	s.db.Close()
+}
+
+// User
+// example: store.User().Create()
+func (s *Store) User() *UserRepository {
+
+	if s.userRepository != nil {
+		return s.userRepository
+	}
+
+	s.userRepository = &UserRepository{
+		store: s,
+	}
+
+	return s.userRepository
 }

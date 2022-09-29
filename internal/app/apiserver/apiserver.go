@@ -36,7 +36,7 @@ func (s *APIServer) Start() error {
 		return err
 	}
 
-	s.logger.Info("start API server")
+	s.logger.Info("start API server on port 8080") //!TODO брать значение номера порта из конфига
 
 	return http.ListenAndServe(s.config.BindAddress, s.router)
 }
