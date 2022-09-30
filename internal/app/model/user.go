@@ -13,12 +13,13 @@ type User struct {
 	EncryptedPassword string
 }
 
-// Валидируем структуру User
+// Валидируем структуру User.
+// Проверяем наличие емейл и пароля, длину пароля и валидность емейла
 func (u *User) Validate() error {
 	return validation.ValidateStruct(u,
-		 validation.Field(&u.Email, validation.Required, is.Email),
-		validation.Field(&u.Password, validation.Required, validation.Length(3,10)),
-		)
+		validation.Field(&u.Email, validation.Required, is.Email),
+		validation.Field(&u.Password, validation.By(requiredIf(u.EncryptedPassword == "")), validation.Length(3, 10)),
+	)
 }
 
 // проверяем не пустой ли пароль и зашифровываем пароль

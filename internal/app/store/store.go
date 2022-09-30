@@ -40,7 +40,7 @@ func (s *Store) Close() {
 	s.db.Close()
 }
 
-// User
+// Создаём пользователя. Пример: 
 // example: store.User().Create()
 func (s *Store) User() *UserRepository {
 
