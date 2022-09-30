@@ -1,7 +1,7 @@
 package model
 
 import (
-	// "golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -11,17 +11,23 @@ type User struct {
 	EncryptedPassword string
 }
 
-// func (u *User) BeforeCreate() error {
-// 	if len(u.Password) > 0 {
-// 		enc, err := encryptString(u.Password)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EncryptedPassword = enc
-// 	}
-// 	return nil
-// }
+// проверяем не пустой ли пароль и зашифровываем пароль
+func (u *User) BeforeCreate() error {
+	if len(u.Password) > 0 {
+		enc, err := encryptString(u.Password)
+		if err != nil {
+			return err
+		}
+		u.EncryptedPassword = enc
+	}
+	return nil
+}
 
-// func encryptString(s string) (string, error)  {
-// 	b, err :=
-// }
+// шифруем пароль. MinCost - слабое шифрование.
+func encryptString(s string) (string, error)  {
+	b, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.MinCost)
+	if err != nil {
+		return "", nil
+	}
+	return string(b), nil
+}
