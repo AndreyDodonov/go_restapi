@@ -8,18 +8,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testApiServer_HandleHello(t *testing.T) {
+func TestApiServer_HandleHello(t *testing.T) {
 	s := New(NewConfig())
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/hello", nil)
 	s.handleHello().ServeHTTP(rec, req)
-	assert.Equal(t, rec.Body.String(), "hello")
+	assert.Equal(t, rec.Body.String(), "Hello")
 }
 
-func testApiServer_HandleMain(t *testing.T) {
+func TestApiServer_HandleMain(t *testing.T) {
 	s := New(NewConfig())
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	s.handleHello().ServeHTTP(rec, req)
+	s.handleMain().ServeHTTP(rec, req)
 	assert.Equal(t, rec.Body.String(), "Main router")
 }
