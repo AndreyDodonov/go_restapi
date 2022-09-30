@@ -28,9 +28,9 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	_, err := s.User().FindByEmail(email)
 	assert.Error(t, err)
 
-	//* 2) создаём пользователя, а потом смотрим в базе есть ли он
+	//* 2) создаём пользователя, а потом ищем в базе по емейлу
 	s.User().Create(&model.User{
-		Email: "example@mail.com",
+		Email: email,
 		EncryptedPassword: "password",
 	})
 	u, err := s.User().FindByEmail(email)
