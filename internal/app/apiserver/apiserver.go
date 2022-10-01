@@ -1,7 +1,7 @@
 package apiserver
 
 import (
-	"go_restapi/internal/app/store"
+	"go_restapi/internal/app/store/sqlstore"
 	"io"
 	"net/http"
 
@@ -13,7 +13,7 @@ type APIServer struct {
 	config *Config
 	logger *logrus.Logger
 	router *mux.Router
-	store  *store.Store
+	store  *sqlstore.Store
 }
 
 func New(config *Config) *APIServer {
@@ -32,9 +32,9 @@ func (s *APIServer) Start() error {
 
 	s.configureRouter()
 
-	if err := s.configureStore(); err != nil {
-		return err
-	}
+	// if err := s.configureStore(); err != nil {
+	// 	return err
+	// }
 
 	s.logger.Info("start API server on port 8080") //!TODO брать значение номера порта из конфига
 
@@ -58,14 +58,14 @@ func (s *APIServer) configureRouter() {
 }
 
 // конфигурируем хранилище
-func (s *APIServer) configureStore() error  {
-	st := store.New(s.config.Store)
-	if err := st.Open(); err != nil {
-		return err
-	}
-	s.store = st
-	return nil
-}
+// func (s *APIServer) configureStore() error  {
+// 	st := sqlstore.New(s.config.Store)
+// 	// if err := st.Open(); err != nil {
+// 	// 	return err
+// 	// }
+// 	s.store = st
+// 	return nil
+// }
 
 func (s *APIServer) handleHello() http.HandlerFunc {
 	type request struct {
