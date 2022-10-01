@@ -2,6 +2,7 @@ package sqlstore_test
 
 import (
 	"go_restapi/internal/app/model"
+	"go_restapi/internal/app/store"
 	"go_restapi/internal/app/store/sqlstore"
 	"testing"
 
@@ -19,7 +20,7 @@ func TestUserRepository_Create(t *testing.T) {
 	assert.NotNil(t, u)
 }
 
-func TestUserRepository_FindByEmail(t *testing.T) {
+func TestUserRepository_FindByEmail(t *testing.T) { //TODO в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
 	db, teardown := sqlstore.TestDB(t, databaseURL)
 	defer teardown("users")
 
@@ -27,7 +28,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	email := "usr@example.com"
 	//* 1) ищем несуществующего  пользователя. Должны получить ошибку
 	_, err := s.User().FindByEmail(email)
-	assert.Error(t, err)
+	assert.EqualError(t, err, store.ErrRecordNotFound.Error())
 
 	//* 2) создаём пользователя, а потом ищем в базе по емейлу
 	u := model.TestUser(t)
