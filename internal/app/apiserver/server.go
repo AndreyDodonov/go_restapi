@@ -5,6 +5,7 @@
 package apiserver
 
 import (
+	"fmt"
 	"go_restapi/internal/app/store"
 	"net/http"
 
@@ -20,6 +21,7 @@ type server struct {
 
 // новый сервер
 func newServer(store store.Store) *server {
+	fmt.Println("newServer") //TODO debug
 	s := &server{
 		router: mux.NewRouter(),
 		logger: logrus.New(),
@@ -35,6 +37,13 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
+// конфигурируем роуты
 func (s *server) configureRouter() {
-	//
+	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
+}
+
+func (s *server) handleUsersCreate() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		
+	 }
 }
