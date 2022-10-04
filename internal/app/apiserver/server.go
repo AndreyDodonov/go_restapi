@@ -5,7 +5,9 @@
 package apiserver
 
 import (
+	"encoding/json"
 	"fmt"
+	"go_restapi/internal/app/model"
 	"go_restapi/internal/app/store"
 	"io"
 	"net/http"
@@ -44,18 +46,72 @@ func (s *server) configureRouter() {
 	s.router.HandleFunc("/", s.handleMain())
 }
 
+// обработка "/users" Регистрация и аутентификация пользователей
 func (s *server) handleUsersCreate() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-	 }
-}
-
-func (s *server) handleMain() http.HandlerFunc  {
 	type request struct {
-		name string
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
-	return func (w http.ResponseWriter, r *http.Request)  {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+
+		body, err := io.ReadAll(r.Body)
+		fmt.Println("body is: ", body)
+		defer r.Body.Close()
+		if err != nil {
+			fmt.Println("body error is: ", err) //TODO debug, need error handler
+			return
+		}
+
+		err = json.Unmarshal(body, &req)
+		fmt.Println("unmarshal email is: ", req.Email)
+		fmt.Println("unmarshal password is: ", req.Password)
+		if err != nil {
+			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
+			return
+		}
+
+		//? fmt.Println("Body in handleUsersCreate: " ) //TODO debug
+		//? fmt.Println(json.NewDecoder(r.Body).Decode(req))   //TODO debug
+		//? if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		//? 	fmt.Println("error in server.go : 73") //TODO debug
+		//? 	fmt.Println("error: ", err) //TODO debug
+		//? 	s.error(w, r, http.StatusBadRequest, err)
+		//? 	return
+		//? }
+
+		u := &model.User{
+			Email:    req.Email,
+			Password: req.Password,
+		}
+		if err := s.store.User().Create(u); err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		u.Sanitize()
+		fmt.Println("user respond") //TODO debug
+		s.respond(w, r, http.StatusCreated, u)
+	}
+}
+
+func (s *server) handleMain() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Server is working \n Main router")
+	}
+}
+
+// хелпер для обработки ошибок
+func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
+	s.respond(w, r, code, map[string]string{"error": err.Error()})
+}
+
+// ответ сервера
+func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	w.WriteHeader(code)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
 	}
 }
