@@ -30,7 +30,7 @@ func newServer(store store.Store) *server {
 		logger: logrus.New(),
 		store:  store,
 	}
-
+	s.logger.Info("start API server")
 	s.configureRouter()
 
 	return s
@@ -65,8 +65,8 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 		}
 
 		err = json.Unmarshal(body, &req)
-		fmt.Println("unmarshal email is: ", req.Email)
-		fmt.Println("unmarshal password is: ", req.Password)
+		fmt.Println("unmarshal email is: ", req.Email) //TODO debug
+		fmt.Println("unmarshal password is: ", req.Password) //TODO debug
 		if err != nil {
 			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
 			return
@@ -86,6 +86,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 			Password: req.Password,
 		}
 		if err := s.store.User().Create(u); err != nil {
+			s.logger.Info("user create error: ",err )
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -93,6 +94,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 		u.Sanitize()
 		fmt.Println("user respond") //TODO debug
 		s.respond(w, r, http.StatusCreated, u)
+		s.logger.Info("new user was created")
 	}
 }
 

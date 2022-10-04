@@ -16,10 +16,9 @@ func Start(config *Config) error  {
 		return err
 	}
 	defer db.Close()
-	fmt.Println("new sql store")
+	fmt.Println("new sql store") //TODO debug
 	store := sqlstore.New(db)
 	srv := newServer(store)
-
 
 	return http.ListenAndServe(config.BindAddress, srv)
 }

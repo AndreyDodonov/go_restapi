@@ -12,16 +12,16 @@ import (
 func TestUserRepository_Create(t *testing.T) {
 
 	s := teststore.New()
-	u:= model.TestUser(t)
+	u := model.TestUser(t)
 	// проверяем создание пользователя
-	assert.NoError(t,  s.User().Create(u))
+	assert.NoError(t, s.User().Create(u))
 	assert.NotNil(t, u)
 }
 
 func TestUserRepository_FindByEmail(t *testing.T) {
 
 	s := teststore.New()
-	email := "usr@example.com"
+	email := "us@examp.com"
 	//* 1) ищем несуществующего  пользователя. Должны получить ошибку
 	_, err := s.User().FindByEmail(email)
 	assert.EqualError(t, err, store.ErrRecordNotFound.Error())
