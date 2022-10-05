@@ -1,6 +1,8 @@
 package apiserver
 
 import (
+	"bytes"
+	"encoding/json"
 	"go_restapi/internal/app/store/teststore"
 	"net/http"
 	"net/http/httptest"
@@ -8,13 +10,36 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
 // тестируем роут создания юзера (шаблон для POST)
 func TestServer_HandleUsersCreate(t *testing.T) {
-	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/users", nil)
 	s := newServer(teststore.New())
-	s.ServeHTTP(rec, req)
-	assert.Equal(t, rec.Code, http.StatusOK)
+	testCases := []struct {
+		name       string
+		payload    interface{}
+		expectCode int
+	}{
+		{
+			name: "valid",
+			payload: map[string]string{
+				"email":    "user@example.com",
+				"password": "Pass-word1",
+			},
+			expectCode: http.StatusCreated,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			b := &bytes.Buffer{}
+			json.NewEncoder(b).Encode(tc.payload)
+			req, _ := http.NewRequest(http.MethodPost, "/users", b)
+			s.ServeHTTP(rec, req)
+			assert.Equal(t, tc.expectCode, rec.Code)
+		})
+	}
+
 }
 
 // тестируем главный роут (шаблон для GET)

@@ -86,7 +86,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 			Password: req.Password,
 		}
 		if err := s.store.User().Create(u); err != nil {
-			s.logger.Info("user create error: ",err )
+			s.logger.Warn("user create error: ",err )
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
