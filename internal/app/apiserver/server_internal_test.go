@@ -25,7 +25,19 @@ func TestServer_HandleUsersCreate(t *testing.T) {
 				"email":    "user@example.com",
 				"password": "Pass-word1",
 			},
-			expectCode: http.StatusCreated,
+			expectCode: http.StatusCreated, //FIXME test crushed, but function work ok
+		},
+		{
+			name:       "invalid payload",
+			payload:    "invalid",
+			expectCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid params",
+			payload: map[string]string{
+				"email": "invalid",
+			},
+			expectCode: http.StatusUnprocessableEntity, //FIXME test crushed, but function work ok
 		},
 	}
 

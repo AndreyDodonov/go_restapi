@@ -20,7 +20,7 @@ func TestUserRepository_Create(t *testing.T) {
 	assert.NotNil(t, u)
 }
 
-func TestUserRepository_FindByEmail(t *testing.T) { //TODO в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
+func TestUserRepository_FindByEmail(t *testing.T) { //FIXME в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
 	db, teardown := sqlstore.TestDB(t, databaseURL)
 	defer teardown("users")
 
