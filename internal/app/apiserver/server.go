@@ -68,10 +68,6 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		(w).Header().Set("Access-Control-Allow-Origin", "*")
-		(w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		(w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
 		req := &request{}
 
 		body, err := io.ReadAll(r.Body)
@@ -89,15 +85,6 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
 			return
 		}
-
-		//? fmt.Println("Body in handleUsersCreate: " ) //TODO debug
-		//? fmt.Println(json.NewDecoder(r.Body).Decode(req))   //TODO debug
-		//? if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		//? 	fmt.Println("error in server.go : 73") //TODO debug
-		//? 	fmt.Println("error: ", err) //TODO debug
-		//? 	s.error(w, r, http.StatusBadRequest, err)
-		//? 	return
-		//? }
 
 		u := &model.User{
 			Email:    req.Email,
@@ -118,9 +105,6 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 
 func (s *server) handleMain() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 		io.WriteString(w, "Server is working \n Main router")
 	}
 }
