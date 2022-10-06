@@ -37,6 +37,18 @@ func newServer(store store.Store) *server {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// wrapper for CORS start
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	}
+	// Stop here if its Preflighted OPTIONS request
+	if r.Method == "OPTIONS" {
+		return
+	}
+	// wrapper for CORS end
 	s.router.ServeHTTP(w, r)
 }
 
@@ -48,12 +60,18 @@ func (s *server) configureRouter() {
 
 // обработка "/users" Регистрация и аутентификация пользователей
 func (s *server) handleUsersCreate() http.HandlerFunc {
+
 	type request struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		(w).Header().Set("Access-Control-Allow-Origin", "*")
+		(w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		(w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
 		req := &request{}
 
 		body, err := io.ReadAll(r.Body)
@@ -65,7 +83,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 		}
 
 		err = json.Unmarshal(body, &req)
-		fmt.Println("unmarshal email is: ", req.Email) //TODO debug
+		fmt.Println("unmarshal email is: ", req.Email)       //TODO debug
 		fmt.Println("unmarshal password is: ", req.Password) //TODO debug
 		if err != nil {
 			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
@@ -86,7 +104,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 			Password: req.Password,
 		}
 		if err := s.store.User().Create(u); err != nil {
-			s.logger.Warn("user create error: ",err )
+			s.logger.Warn("user create error: ", err)
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -99,8 +117,10 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 }
 
 func (s *server) handleMain() http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 		io.WriteString(w, "Server is working \n Main router")
 	}
 }
