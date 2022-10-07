@@ -1,10 +1,11 @@
-console.log("Its a live!");
 
 const button = document.querySelector('.btn'),
       emailInput = document.querySelector('.email'),
       passwordInput = document.querySelector('.password'),
       headerBtn = document.querySelector('.header_btn'),
-      registrationPopup = document.querySelector('.registration_wrap')
+      registrationPopup = document.querySelector('.registration_wrap'),
+      usersBtn = document.querySelector('.users_btn'),
+      userList = document.querySelector('.userlist')
 
 const URL = 'http://localhost:8080/users'
 
@@ -25,8 +26,19 @@ button.addEventListener('click', () => {
       password: passwordInput.value
     })
   })
+})
 
-  console.log(emailInput.value);
-  console.log(passwordInput.value);
+// handle of all users button
+usersBtn.addEventListener('click', () => {  // TODO add errors handler
+  fetch(URL)
+  .then(data => data.json())
+  .then(output => {
+    for (item in output) {
+      let li = document.createElement("li")
+      let node = document.createTextNode(output[item])
+      li.appendChild(node)
+      userList.appendChild(li)
+    }
+  })
 })
 

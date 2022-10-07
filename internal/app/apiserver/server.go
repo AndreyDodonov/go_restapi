@@ -55,7 +55,30 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // конфигурируем роуты
 func (s *server) configureRouter() {
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
+	s.router.HandleFunc("/users", s.handleUsersGet()).Methods("GET")
 	s.router.HandleFunc("/", s.handleMain())
+}
+
+func (s *server) handleUsersGet() http.HandlerFunc  {
+
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		 allUser, err := s.store.User().Get()
+		 if err != nil {
+			s.logger.Warn("request all users error: ", err)
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		fmt.Println("all user: ", allUser) //TODO debug
+	  s.respond(w, r, http.StatusOK, allUser)
+		s.logger.Info("all users requested")
+	}
+
 }
 
 // обработка "/users" Регистрация и аутентификация пользователей
@@ -97,8 +120,9 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 		}
 
 		u.Sanitize()
-		fmt.Println("user respond") //TODO debug
-		s.respond(w, r, http.StatusCreated, u)
+
+		// s.respond(w, r, http.StatusCreated, u)
+		fmt.Println("user respond: ", w) //TODO debug
 		s.logger.Info("new user was created")
 	}
 }

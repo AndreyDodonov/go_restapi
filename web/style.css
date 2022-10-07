@@ -1,5 +1,8 @@
 body {
   font-family: 'Roboto', sans-serif;
+  background: linear-gradient(112.1deg, rgb(32, 38, 57) 11.4%, rgb(63, 76, 119) 70.2%) no-repeat ;
+  height: 100vh;
+  color: #fff;
 }
 
 .registration_wrap {
@@ -17,6 +20,7 @@ body {
 .buttons_wrapper {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 .header_btn {
   cursor: pointer;

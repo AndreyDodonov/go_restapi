@@ -2,6 +2,7 @@ package sqlstore
 
 import (
 	"database/sql"
+	"fmt"
 	"go_restapi/internal/app/model"
 	"go_restapi/internal/app/store"
 )
@@ -26,6 +27,29 @@ func (r *UserRepository) Create(u *model.User) error {
 		u.Email,
 		u.EncryptedPassword,
 	).Scan(&u.ID)
+}
+
+// Get users
+func (r *UserRepository) Get() ([]string, error) {
+
+	u := &model.User{}
+	rows, err := r.store.db.Query("SELECT * FROM users")
+	if err != nil {
+		fmt.Println("Query error (userRepository: 35) : ", err)
+		return nil, err
+	}
+	fmt.Println("Rows : ", rows)
+	 rows.Scan(&u.ID, &u.Email, &u.EncryptedPassword)
+	 users := make([]string, 0)
+	 for rows.Next() {
+		// var user string
+		if err := rows.Scan(&u.ID, &u.Email, &u.EncryptedPassword); err != nil {
+			fmt.Println("error in userRepository 47: ", err)
+		}
+		users = append(users, u.Email)
+		fmt.Printf("user is - %s \n", u.Email)
+	 }
+	return users, nil
 }
 
 // Find user by email
