@@ -6,6 +6,7 @@ package apiserver
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go_restapi/internal/app/model"
 	"go_restapi/internal/app/store"
@@ -13,22 +14,31 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 )
 
+const sessionName = "my_api_server"
+
+var (
+	incorrectEmailOrPassword = errors.New("Incorrect login or email")
+)
+
 type server struct {
-	router *mux.Router
-	logger *logrus.Logger
-	store  store.Store
+	router       *mux.Router
+	logger       *logrus.Logger
+	store        store.Store
+	sessionStore sessions.Store
 }
 
 // новый сервер
-func newServer(store store.Store) *server {
-	fmt.Println("newServer") //TODO debug
+func newServer(store store.Store, sessionStore sessions.Store) *server {
+
 	s := &server{
-		router: mux.NewRouter(),
-		logger: logrus.New(),
-		store:  store,
+		router:       mux.NewRouter(),
+		logger:       logrus.New(),
+		store:        store,
+		sessionStore: sessionStore,
 	}
 	s.logger.Info("start API server")
 	s.configureRouter()
@@ -56,11 +66,58 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *server) configureRouter() {
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
 	s.router.HandleFunc("/users", s.handleUsersGet()).Methods("GET")
+	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
 	s.router.PathPrefix("/").Handler(http.FileServer(http.Dir("./web")))
-
 }
 
-func (s *server) handleUsersGet() http.HandlerFunc  {
+// создание сессий
+func (s *server) handleSessionsCreate() http.HandlerFunc {
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+
+		body, err := io.ReadAll(r.Body)
+		fmt.Println("body is: ", body)
+		defer r.Body.Close()
+		if err != nil {
+			return
+		}
+
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
+			return
+		}
+		fmt.Println("Email: ", req.Email)
+		fmt.Println("Password: ", req.Password)
+		u, err := s.store.User().FindByEmail(req.Email)
+		if err != nil || u.UserComparePassword(req.Password) {
+			fmt.Println("error in find by email. Email: ", req.Email)
+			s.error(w, r, http.StatusUnauthorized, incorrectEmailOrPassword)
+			return
+		}
+		session, err := s.sessionStore.Get(r, sessionName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		session.Values["user_id"] = u.ID
+		if err := s.sessionStore.Save(r, w, session); err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		s.respond(w, r, http.StatusOK, nil)
+
+	}
+}
+
+// получаем свписок всех пользователей (пока у нас только емейлы)
+func (s *server) handleUsersGet() http.HandlerFunc {
 
 	type request struct {
 		Email    string `json:"email"`
@@ -68,15 +125,15 @@ func (s *server) handleUsersGet() http.HandlerFunc  {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		 allUser, err := s.store.User().Get()
-		 if err != nil {
+		allUser, err := s.store.User().Get()
+		if err != nil {
 			s.logger.Warn("request all users error: ", err)
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
-		fmt.Println("all user: ", allUser) //TODO debug
-	  s.respond(w, r, http.StatusOK, allUser)
+		// fmt.Println("all user: ", allUser) //for view all users in console
+		s.respond(w, r, http.StatusOK, allUser)
 		s.logger.Info("all users requested")
 	}
 
@@ -103,8 +160,8 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 		}
 
 		err = json.Unmarshal(body, &req)
-		fmt.Println("unmarshal email is: ", req.Email)       //TODO debug
-		fmt.Println("unmarshal password is: ", req.Password) //TODO debug
+		//fmt.Println("unmarshal email is: ", req.Email)       //for debug
+		//fmt.Println("unmarshal password is: ", req.Password) //for debug
 		if err != nil {
 			fmt.Println("unmarshal error is: ", err) //TODO debug, need error handler
 			return
@@ -122,8 +179,7 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 
 		u.Sanitize()
 
-		// s.respond(w, r, http.StatusCreated, u)
-		fmt.Println("user respond: ", w) //TODO debug
+		//fmt.Println("user respond: ", w) //for debug
 		s.logger.Info("new user was created")
 	}
 }
