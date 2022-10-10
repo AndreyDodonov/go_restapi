@@ -56,7 +56,8 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *server) configureRouter() {
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
 	s.router.HandleFunc("/users", s.handleUsersGet()).Methods("GET")
-	s.router.HandleFunc("/", s.handleMain())
+	s.router.PathPrefix("/").Handler(http.FileServer(http.Dir("./web")))
+
 }
 
 func (s *server) handleUsersGet() http.HandlerFunc  {
@@ -129,7 +130,8 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 
 func (s *server) handleMain() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Server is working \n Main router")
+		// io.WriteString(w, "Server is working \n Main router")
+		http.FileServer(http.Dir("./web"))
 	}
 }
 
