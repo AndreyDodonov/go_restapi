@@ -34,3 +34,20 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, u)
 }
+
+func TestUserRepository_Find(t *testing.T) { //FIXME в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
+
+	s := teststore.New()
+	// email := "usr@example.com"
+	//* 1) ищем несуществующего  пользователя. Должны получить ошибку
+	// _, err := s.User().FindByEmail(email)
+	// assert.EqualError(t, err, store.ErrRecordNotFound.Error())
+
+	//* 2) создаём пользователя, а потом ищем в базе по емейлу
+	u1 := model.TestUser(t)
+	// u.Email = email
+	s.User().Create(u1)
+	u2, err := s.User().Find(u1.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, u2)
+}

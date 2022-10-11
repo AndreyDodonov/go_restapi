@@ -23,7 +23,7 @@ func TestUserRepository_Create(t *testing.T) {
 func TestUserRepository_FindByEmail(t *testing.T) { //FIXME в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
 	db, teardown := sqlstore.TestDB(t, databaseURL)
 	defer teardown("users")
-
+	u1 := model.TestUser(t)
 	s := sqlstore.New(db)
 	email := "usr@example.com"
 	//* 1) ищем несуществующего  пользователя. Должны получить ошибку
@@ -31,10 +31,29 @@ func TestUserRepository_FindByEmail(t *testing.T) { //FIXME в тестах чт
 	assert.EqualError(t, err, store.ErrRecordNotFound.Error())
 
 	//* 2) создаём пользователя, а потом ищем в базе по емейлу
-	u := model.TestUser(t)
-	u.Email = email
-	s.User().Create(u)
-	u, err = s.User().FindByEmail(email)
+
+	//u.Email = email
+	s.User().Create(u1)
+	u2, err := s.User().FindByEmail(u1.Email)
 	assert.NoError(t, err)
-	assert.NotNil(t, u)
+	assert.NotNil(t, u2)
+}
+
+func TestUserRepository_Find(t *testing.T) { //FIXME в тестах что то не то с подключением к базе, хотя подключение есть - записи делаются
+	db, teardown := sqlstore.TestDB(t, databaseURL)
+	defer teardown("users")
+
+	s := sqlstore.New(db)
+	// email := "usr@example.com"
+	//* 1) ищем несуществующего  пользователя. Должны получить ошибку
+	// _, err := s.User().FindByEmail(email)
+	// assert.EqualError(t, err, store.ErrRecordNotFound.Error())
+
+	//* 2) создаём пользователя, а потом ищем в базе по емейлу
+	u1 := model.TestUser(t)
+	// u.Email = email
+	s.User().Create(u1)
+	u2, err := s.User().Find(u1.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, u2)
 }
