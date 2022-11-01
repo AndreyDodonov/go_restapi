@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"go_restapi/internal/app/apiserver"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/BurntSushi/toml"
 )
@@ -14,25 +17,36 @@ var (
 )
 
 // специальная функция, выполняет перед main. init можут быть не один
-func init()  {
+func init() {
 	flag.StringVar(&configPath, "config-path", "configs/apiserver.toml", "path to config file")
 }
 
 // точка входа в программу
 func main() {
 	flag.Parse()
-	fmt.Println("1") //TODO debug
-	fmt.Println(configPath) //TODO debug
 
-	fmt.Println("newConfig") //TODO debug
 	config := apiserver.NewConfig()
-	fmt.Println(config)
 	_, err := toml.DecodeFile(configPath, config)
 	if err != nil {
 		log.Fatal(err)
 	}
- fmt.Println("start") //TODO debug
 	if err := apiserver.Start(config); err != nil {
 		log.Fatal(err)
 	}
+
+
+	// graceful shutdown
+
+	go func() {
+		fmt.Print("server shutdown")
+		shutdown := make(chan struct{})
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals,
+			syscall.SIGTERM,
+			syscall.SIGINT)
+			<- signals
+
+			close(shutdown)
+	}()
+
 }

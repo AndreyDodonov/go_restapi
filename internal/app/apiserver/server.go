@@ -5,6 +5,7 @@
 package apiserver
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,11 +19,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const sessionName = "my_api_server"
+const (
+	sessionName        = "my_api_server"
+	ctxKeyUser  ctxKey = iota
+)
 
 var (
-	incorrectEmailOrPassword = errors.New("Incorrect login or email")
+	errIncorrectEmailOrPassword = errors.New("incorrect login or email")
+	errNotAuthenicated          = errors.New("not authenticated")
 )
+
+type ctxKey int8
 
 type server struct {
 	router       *mux.Router
@@ -40,7 +47,7 @@ func newServer(store store.Store, sessionStore sessions.Store) *server {
 		store:        store,
 		sessionStore: sessionStore,
 	}
-	s.logger.Info("start API server")
+	s.logger.Info("start API server at port: ", NewConfig().BindAddress)
 	s.configureRouter()
 
 	return s
@@ -67,11 +74,21 @@ func (s *server) configureRouter() {
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
 	s.router.HandleFunc("/users", s.handleUsersGet()).Methods("GET")
 	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
-	s.router.PathPrefix("/").Handler(http.FileServer(http.Dir("./web")))
+//  s.router.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./web"))))
+	s.router.HandleFunc("/", s.handleMain()).Methods("GET")
+	s.router.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("./web/"))))
+	// роуты не доступные без аутентификации (/private/...)
+	private := s.router.PathPrefix("/private").Subrouter()
+	private.Use(s.authenticateUser)
+	private.HandleFunc("/whoami", s.handleWhoami()).Methods("GET")
 }
+
 
 // создание сессий
 func (s *server) handleSessionsCreate() http.HandlerFunc {
+	// пример запроса для теста в HTTPie
+	// http -v --session=user POST http://localhost:8080/sessions email=user5@example.com password=1234
+	// http -v --session=user http://localhost:8080/private/whoami
 	type request struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -96,7 +113,7 @@ func (s *server) handleSessionsCreate() http.HandlerFunc {
 		u, err := s.store.User().FindByEmail(req.Email)
 		if err != nil || u.UserComparePassword(req.Password) {
 			fmt.Println("error in find by email. Email: ", req.Email)
-			s.error(w, r, http.StatusUnauthorized, incorrectEmailOrPassword)
+			s.error(w, r, http.StatusUnauthorized, errIncorrectEmailOrPassword)
 			return
 		}
 		session, err := s.sessionStore.Get(r, sessionName)
@@ -119,11 +136,6 @@ func (s *server) handleSessionsCreate() http.HandlerFunc {
 // получаем свписок всех пользователей (пока у нас только емейлы)
 func (s *server) handleUsersGet() http.HandlerFunc {
 
-	type request struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		allUser, err := s.store.User().Get()
 		if err != nil {
@@ -137,6 +149,32 @@ func (s *server) handleUsersGet() http.HandlerFunc {
 		s.logger.Info("all users requested")
 	}
 
+}
+
+func (s *server) authenticateUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//получаем сессию пользователя из его запроса
+		session, err := s.sessionStore.Get(r, sessionName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		id, ok := session.Values["user_id"]
+		if !ok {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenicated)
+			return
+		}
+
+		u, err := s.store.User().Find(id.(int))
+		if err != nil {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenicated)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyUser, u)))
+
+	})
 }
 
 // обработка "/users" Регистрация и аутентификация пользователей
@@ -184,12 +222,20 @@ func (s *server) handleUsersCreate() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleMain() http.HandlerFunc {
+func (s *server) handleWhoami() http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		// io.WriteString(w, "Server is working \n Main router")
-		http.FileServer(http.Dir("./web"))
+		s.respond(w, r, http.StatusOK, r.Context().Value(ctxKeyUser).(*model.User))
 	}
 }
+
+func (s *server) handleMain() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//io.WriteString(w, "Server is working \n Main router")
+		http.ServeFile(w, r, "./web/index.html")
+	}
+}
+
 
 // хелпер для обработки ошибок
 func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
